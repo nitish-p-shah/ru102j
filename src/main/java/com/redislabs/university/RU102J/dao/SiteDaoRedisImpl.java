@@ -25,10 +25,8 @@ public class SiteDaoRedisImpl implements SiteDao {
         }
     }
 
-    @Override
-    public Site findById(long id) {
+    public Site findByKey(String key){
         try(Jedis jedis = jedisPool.getResource()) {
-            String key = RedisSchema.getSiteHashKey(id);
             Map<String, String> fields = jedis.hgetAll(key);
             if (fields == null || fields.isEmpty()) {
                 return null;
@@ -38,25 +36,27 @@ public class SiteDaoRedisImpl implements SiteDao {
         }
     }
 
+    @Override
+    public Site findById(long id) {
+        String key = RedisSchema.getSiteHashKey(id);
+        return findByKey(key);
+    }
+
     // Challenge #1
     @Override
     public Set<Site> findAll() {
         // START Challenge #1
+        Set<Site> sites = new HashSet<>();
         try(Jedis jedis = jedisPool.getResource()) {
             String idsKey = RedisSchema.getSiteIDsKey();
-            Set<String> ids = jedis.smembers(idsKey);
-            for (String id : ids){
-                Site s = findById(ids);
-            }
-            String key = RedisSchema.getSiteHashKey(id);
-            Map<String, String> fields = jedis.hgetAll(key);
-            if (fields == null || fields.isEmpty()) {
-                return null;
-            } else {
-                return ;
+            Set<String> keys = jedis.smembers(idsKey);
+            for (String key : keys){
+                Site site = findByKey(key);
+                if(site != null) sites.add(site);
             }
         }
-        return Collections.emptySet();
+        return sites;
+        // return Collections.emptySet();
         // END Challenge #1
     }
 }
